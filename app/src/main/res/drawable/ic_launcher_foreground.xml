@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Floor bar -->
+    <path
+        android:fillColor="#334155"
+        android:pathData="M26,72 L82,72 A2,2 0 0,0 82,68 L26,68 A2,2 0 0,0 26,72 Z" />
+
+    <!-- Upward arrow dynamic energy tick -->
+    <path
+        android:fillColor="#FF6B35"
+        android:pathData="M70,33 L75,28 L80,33 L78,35 L76.2,33.2 L76.2,42 L73.8,42 L73.8,33.2 L72,35 Z" />
+
+    <!-- Head -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M33,40 A5,5 0 1,0 33,50 A5,5 0 1,0 33,40 Z" />
+
+    <!-- Arms pushing down: shoulder to elbow to hand on floor -->
+    <path
+        android:strokeColor="#FF6B35"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M40,51 L38,60 L38,68" />
+
+    <!-- Body Plank Line: shoulder to hip to legs/ankles -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M39,51 L56,57 L75,64" />
+
+    <!-- Feet contact at floor -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M75,64 L77,68" />
+
+</vector>

@@ -1,0 +1,6 @@
+{
+  "name": "PushCount",
+  "description": "On-device real-time pushup counter with posture validation and workout tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
