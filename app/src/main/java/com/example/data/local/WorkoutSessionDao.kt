@@ -40,6 +40,9 @@ interface WorkoutSessionDao {
     @Query("SELECT COALESCE(SUM(validReps), 0) FROM workout_sessions")
     fun getAllTimeTotalValidReps(): Flow<Int>
 
+    @Query("SELECT COALESCE(SUM(validReps), 0) FROM workout_sessions WHERE mode = :mode")
+    fun getTotalValidRepsForMode(mode: String): Flow<Int>
+
     @Query("SELECT DISTINCT date FROM workout_sessions WHERE validReps > 0 ORDER BY date DESC")
     fun getDistinctDatesWithValidReps(): Flow<List<Long>>
 

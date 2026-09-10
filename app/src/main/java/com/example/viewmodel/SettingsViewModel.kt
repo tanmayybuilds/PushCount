@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.preferences.ThemeMode
 import com.example.data.preferences.UserPreferencesRepository
 import com.example.data.repository.WorkoutRepository
+import com.example.ui.theme.ColorPalette
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -14,7 +15,8 @@ import kotlinx.coroutines.launch
 data class SettingsUiState(
     val dailyGoal: Int = 50,
     val useFrontCamera: Boolean = true,
-    val themeMode: ThemeMode = ThemeMode.SYSTEM
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val colorPalette: ColorPalette = ColorPalette.SOLAR_BLAZE
 )
 
 class SettingsViewModel(
@@ -25,12 +27,14 @@ class SettingsViewModel(
     val uiState: StateFlow<SettingsUiState> = combine(
         preferencesRepository.dailyGoalFlow,
         preferencesRepository.useFrontCameraFlow,
-        preferencesRepository.themeModeFlow
-    ) { goal, useFront, theme ->
+        preferencesRepository.themeModeFlow,
+        preferencesRepository.colorPaletteFlow
+    ) { goal, useFront, theme, palette ->
         SettingsUiState(
             dailyGoal = goal,
             useFrontCamera = useFront,
-            themeMode = theme
+            themeMode = theme,
+            colorPalette = palette
         )
     }.stateIn(
         scope = viewModelScope,
@@ -53,6 +57,12 @@ class SettingsViewModel(
     fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch {
             preferencesRepository.setThemeMode(mode)
+        }
+    }
+
+    fun setColorPalette(palette: ColorPalette) {
+        viewModelScope.launch {
+            preferencesRepository.setColorPalette(palette)
         }
     }
 

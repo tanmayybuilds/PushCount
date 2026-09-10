@@ -16,17 +16,21 @@ enum class BodySide {
 }
 
 enum class PostureFeedback(val message: String, val isError: Boolean) {
-    GOOD_FORM("Good form", false),
-    KEEP_BACK_STRAIGHT("Keep your back straight", true),
-    HIPS_SAGGING("Hips sagging - tighten core", true),
-    HIPS_TOO_HIGH("Hips too high - lower hips", true),
-    GO_LOWER("Go lower to 90°", false),
+    GOOD_FORM("Good form!", false),
+    NEARBY_FORM("Good effort - rep counted!", false),
+    KEEP_BACK_STRAIGHT("Keep back steady", false),
+    HIPS_SAGGING("Hips dipping slightly", false),
+    HIPS_TOO_HIGH("Hips high - lower slightly", false),
+    GO_LOWER("Lower chest a bit more", false),
     PUSH_ALL_WAY_UP("Push all the way up", false),
-    POOR_VISIBILITY("Can't see full body - adjust camera", true),
+    POOR_VISIBILITY("Can't see body - step back", true),
     READY("Ready - get into position", false),
-    BOTH_HANDS_NOT_DETECTED("Both hands not detected - place both in view", true),
-    KEEP_SHOULDERS_LEVEL("Keep shoulders level and even", true),
-    UNEVEN_ARMS("Push evenly with both arms", true)
+    BOTH_HANDS_NOT_DETECTED("Keep both arms in view", true),
+    KEEP_SHOULDERS_LEVEL("Keep shoulders level", false),
+    UNEVEN_ARMS("Push evenly with both arms", false),
+    KNEE_PUSHUP_DETECTED("Knee pushup active", false),
+    WALL_PUSHUP_DETECTED("Wall pushup active", false),
+    STRICT_FORM_FAILED("Strict form required - rep invalid", true)
 }
 
 data class PosePoint(
@@ -57,7 +61,8 @@ data class PoseKeypoints(
     val leftElbowAngle: Float = 0f,
     val rightElbowAngle: Float = 0f,
     val shoulderTiltDegrees: Float = 0f,
-    val hasAnkle: Boolean = true
+    val hasAnkle: Boolean = true,
+    val isKneePushup: Boolean = false
 )
 
 data class PushupDetectionResult(
@@ -71,9 +76,10 @@ data class PushupDetectionResult(
     val detectedSide: BodySide,
     val isBodyVisible: Boolean,
     val keypoints: PoseKeypoints? = null,
-    // Progress of current rep depth: 0f (top / lockout) to 1f (bottom 90deg)
+    // Progress of current rep depth: 0f (top / lockout) to 1f (bottom depth)
     val repDepthProgress: Float = 0f,
     val isBothHandsDetected: Boolean = false,
     val leftElbowAngle: Float = 0f,
-    val rightElbowAngle: Float = 0f
+    val rightElbowAngle: Float = 0f,
+    val isKneePushup: Boolean = false
 )

@@ -51,11 +51,11 @@ class PoseDetectorProcessor(
         detector.process(inputImage)
             .addOnSuccessListener { pose ->
                 val keypoints = extractKeypoints(pose)
-                val result = repDetector.processKeypoints(keypoints)
+                val result = repDetector.processKeypoints(keypoints, System.currentTimeMillis())
                 onResult(result, imageWidth, imageHeight, rotationDegrees == 90 || rotationDegrees == 270)
             }
             .addOnFailureListener {
-                val result = repDetector.processKeypoints(null)
+                val result = repDetector.processKeypoints(null, System.currentTimeMillis())
                 onResult(result, imageWidth, imageHeight, false)
             }
             .addOnCompleteListener {
@@ -66,6 +66,10 @@ class PoseDetectorProcessor(
 
     fun reset() {
         repDetector.reset()
+    }
+
+    fun setMode(mode: com.example.data.model.PushupMode) {
+        repDetector.setMode(mode)
     }
 
     fun close() {
@@ -91,7 +95,7 @@ class PoseDetectorProcessor(
             val rightKnee = pose.getPoseLandmark(PoseLandmark.RIGHT_KNEE)
             val rightAnkle = pose.getPoseLandmark(PoseLandmark.RIGHT_ANKLE)
 
-            val minConf = 0.35f
+            val minConf = 0.25f
 
             val hasLeftShoulder = leftShoulder != null && leftShoulder.inFrameLikelihood >= minConf
             val hasRightShoulder = rightShoulder != null && rightShoulder.inFrameLikelihood >= minConf
@@ -101,54 +105,55 @@ class PoseDetectorProcessor(
             val hasRightWrist = rightWrist != null && rightWrist.inFrameLikelihood >= minConf
 
             // Check if user is positioned facing the camera (FRONT orientation)
+            // Front view is prioritized because it fits in limited room space
             if (hasLeftShoulder && hasRightShoulder) {
                 val shoulderWidth = kotlin.math.abs(leftShoulder.position.x - rightShoulder.position.x)
-                val isFrontOrientation = shoulderWidth >= 50f && (
-                    (hasLeftElbow && hasRightElbow) ||
-                    (hasLeftWrist && hasRightWrist) ||
-                    (leftShoulder.inFrameLikelihood >= 0.5f && rightShoulder.inFrameLikelihood >= 0.5f && shoulderWidth >= 70f)
+                val isFrontOrientation = shoulderWidth >= 40f && (
+                    (hasLeftElbow || hasRightElbow) ||
+                    (hasLeftWrist || hasRightWrist) ||
+                    (leftShoulder.inFrameLikelihood >= 0.4f && rightShoulder.inFrameLikelihood >= 0.4f)
                 )
 
                 if (isFrontOrientation) {
                     val lShoulderPt = PosePoint(leftShoulder.position.x, leftShoulder.position.y, leftShoulder.inFrameLikelihood)
                     val rShoulderPt = PosePoint(rightShoulder.position.x, rightShoulder.position.y, rightShoulder.inFrameLikelihood)
 
-                    val lElbowPt = if (leftElbow != null) {
+                    val lElbowPt = if (leftElbow != null && leftElbow.inFrameLikelihood >= minConf) {
                         PosePoint(leftElbow.position.x, leftElbow.position.y, leftElbow.inFrameLikelihood)
                     } else {
-                        PosePoint(lShoulderPt.x - 40f, lShoulderPt.y + 60f, 0f)
+                        PosePoint(lShoulderPt.x - 35f, lShoulderPt.y + 60f, 0.4f)
                     }
 
-                    val rElbowPt = if (rightElbow != null) {
+                    val rElbowPt = if (rightElbow != null && rightElbow.inFrameLikelihood >= minConf) {
                         PosePoint(rightElbow.position.x, rightElbow.position.y, rightElbow.inFrameLikelihood)
                     } else {
-                        PosePoint(rShoulderPt.x + 40f, rShoulderPt.y + 60f, 0f)
+                        PosePoint(rShoulderPt.x + 35f, rShoulderPt.y + 60f, 0.4f)
                     }
 
-                    val lWristPt = if (leftWrist != null) {
+                    // Forgiving wrist detection: if wrist is close to bottom frame edge or palm on floor,
+                    // infer smoothly from forearm trajectory rather than failing the user.
+                    val lWristPt = if (leftWrist != null && leftWrist.inFrameLikelihood >= 0.2f) {
                         PosePoint(leftWrist.position.x, leftWrist.position.y, leftWrist.inFrameLikelihood)
                     } else {
-                        PosePoint(lElbowPt.x, lElbowPt.y + 60f, 0f)
+                        PosePoint(lElbowPt.x, lElbowPt.y + 50f, 0.4f)
                     }
 
-                    val rWristPt = if (rightWrist != null) {
+                    val rWristPt = if (rightWrist != null && rightWrist.inFrameLikelihood >= 0.2f) {
                         PosePoint(rightWrist.position.x, rightWrist.position.y, rightWrist.inFrameLikelihood)
                     } else {
-                        PosePoint(rElbowPt.x, rElbowPt.y + 60f, 0f)
+                        PosePoint(rElbowPt.x, rElbowPt.y + 50f, 0.4f)
                     }
 
                     val lHipPt = leftHip?.let { PosePoint(it.position.x, it.position.y, it.inFrameLikelihood) }
                     val rHipPt = rightHip?.let { PosePoint(it.position.x, it.position.y, it.inFrameLikelihood) }
 
-                    val isBothHandsDetected = hasLeftWrist && hasRightWrist && hasLeftElbow && hasRightElbow
+                    // Both arms in view: both arms must have genuine elbow or wrist detection
+                    val hasLeftArm = (hasLeftElbow || hasLeftWrist) && hasLeftShoulder
+                    val hasRightArm = (hasRightElbow || hasRightWrist) && hasRightShoulder
+                    val isBothHandsDetected = hasLeftArm && hasRightArm
 
-                    val leftElbowAngle = if (hasLeftShoulder && hasLeftElbow && hasLeftWrist) {
-                        PushupRepDetector.calculateJointAngle(lShoulderPt, lElbowPt, lWristPt)
-                    } else 0f
-
-                    val rightElbowAngle = if (hasRightShoulder && hasRightElbow && hasRightWrist) {
-                        PushupRepDetector.calculateJointAngle(rShoulderPt, rElbowPt, rWristPt)
-                    } else 0f
+                    val leftElbowAngle = PushupRepDetector.calculateJointAngle(lShoulderPt, lElbowPt, lWristPt)
+                    val rightElbowAngle = PushupRepDetector.calculateJointAngle(rShoulderPt, rElbowPt, rWristPt)
 
                     val dx = kotlin.math.abs(rShoulderPt.x - lShoulderPt.x)
                     val dy = kotlin.math.abs(rShoulderPt.y - lShoulderPt.y)
@@ -175,6 +180,11 @@ class PoseDetectorProcessor(
                         PosePoint(midShoulder.x, midShoulder.y + 120f, 0.5f)
                     }
 
+                    // Knee pushup check in front view: if knees are visible and ankles are elevated
+                    val hasKnee = (leftKnee != null && leftKnee.inFrameLikelihood >= 0.2f) ||
+                            (rightKnee != null && rightKnee.inFrameLikelihood >= 0.2f)
+                    val isKneePushup = hasKnee && (leftAnkle != null || rightAnkle != null)
+
                     val confidenceList = listOfNotNull(leftShoulder, rightShoulder, leftElbow, rightElbow, leftWrist, rightWrist)
                     val avgConfidence = confidenceList.map { it.inFrameLikelihood }.average().toFloat()
 
@@ -199,7 +209,8 @@ class PoseDetectorProcessor(
                         leftElbowAngle = leftElbowAngle,
                         rightElbowAngle = rightElbowAngle,
                         shoulderTiltDegrees = shoulderTilt,
-                        hasAnkle = false
+                        hasAnkle = false,
+                        isKneePushup = isKneePushup
                     )
                 }
             }
@@ -213,15 +224,17 @@ class PoseDetectorProcessor(
 
             return if (leftScore >= rightScore && leftShoulder != null && leftElbow != null && leftWrist != null && leftHip != null) {
                 val hasAnkle = leftAnkle != null && leftAnkle.inFrameLikelihood >= minConf
+                val hasKnee = leftKnee != null && leftKnee.inFrameLikelihood >= minConf
+
                 val anklePoint = if (hasAnkle) {
                     PosePoint(leftAnkle.position.x, leftAnkle.position.y, leftAnkle.inFrameLikelihood)
-                } else if (leftKnee != null && leftKnee.inFrameLikelihood >= minConf) {
+                } else if (hasKnee) {
                     PosePoint(leftKnee.position.x, leftKnee.position.y, leftKnee.inFrameLikelihood)
                 } else {
                     PosePoint(leftHip.position.x + 100f, leftHip.position.y, 0.4f)
                 }
 
-                val kneePoint = if (leftKnee != null) {
+                val kneePoint = if (hasKnee) {
                     PosePoint(leftKnee.position.x, leftKnee.position.y, leftKnee.inFrameLikelihood)
                 } else {
                     anklePoint
@@ -231,6 +244,9 @@ class PoseDetectorProcessor(
                 val lElbowPt = PosePoint(leftElbow.position.x, leftElbow.position.y, leftElbow.inFrameLikelihood)
                 val lWristPt = PosePoint(leftWrist.position.x, leftWrist.position.y, leftWrist.inFrameLikelihood)
                 val elbowAngle = PushupRepDetector.calculateJointAngle(lShoulderPt, lElbowPt, lWristPt)
+
+                // Detect Knee Pushup: knee is lower/grounded and ankle is lifted or bent
+                val isKnee = hasKnee && (anklePoint.y < kneePoint.y + 15f || !hasAnkle)
 
                 PoseKeypoints(
                     side = BodySide.LEFT,
@@ -246,19 +262,22 @@ class PoseDetectorProcessor(
                     leftWrist = lWristPt,
                     isBothHandsDetected = true,
                     leftElbowAngle = elbowAngle,
-                    hasAnkle = hasAnkle
+                    hasAnkle = hasAnkle,
+                    isKneePushup = isKnee
                 )
             } else if (rightShoulder != null && rightElbow != null && rightWrist != null && rightHip != null) {
                 val hasAnkle = rightAnkle != null && rightAnkle.inFrameLikelihood >= minConf
+                val hasKnee = rightKnee != null && rightKnee.inFrameLikelihood >= minConf
+
                 val anklePoint = if (hasAnkle) {
                     PosePoint(rightAnkle.position.x, rightAnkle.position.y, rightAnkle.inFrameLikelihood)
-                } else if (rightKnee != null && rightKnee.inFrameLikelihood >= minConf) {
+                } else if (hasKnee) {
                     PosePoint(rightKnee.position.x, rightKnee.position.y, rightKnee.inFrameLikelihood)
                 } else {
                     PosePoint(rightHip.position.x + 100f, rightHip.position.y, 0.4f)
                 }
 
-                val kneePoint = if (rightKnee != null) {
+                val kneePoint = if (hasKnee) {
                     PosePoint(rightKnee.position.x, rightKnee.position.y, rightKnee.inFrameLikelihood)
                 } else {
                     anklePoint
@@ -268,6 +287,8 @@ class PoseDetectorProcessor(
                 val rElbowPt = PosePoint(rightElbow.position.x, rightElbow.position.y, rightElbow.inFrameLikelihood)
                 val rWristPt = PosePoint(rightWrist.position.x, rightWrist.position.y, rightWrist.inFrameLikelihood)
                 val elbowAngle = PushupRepDetector.calculateJointAngle(rShoulderPt, rElbowPt, rWristPt)
+
+                val isKnee = hasKnee && (anklePoint.y < kneePoint.y + 15f || !hasAnkle)
 
                 PoseKeypoints(
                     side = BodySide.RIGHT,
@@ -283,7 +304,8 @@ class PoseDetectorProcessor(
                     rightWrist = rWristPt,
                     isBothHandsDetected = true,
                     rightElbowAngle = elbowAngle,
-                    hasAnkle = hasAnkle
+                    hasAnkle = hasAnkle,
+                    isKneePushup = isKnee
                 )
             } else {
                 null

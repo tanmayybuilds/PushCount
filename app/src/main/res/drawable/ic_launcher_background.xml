@@ -13,16 +13,16 @@
                 android:endX="108"
                 android:endY="108"
                 android:type="linear">
-                <item android:color="#0F172A" android:offset="0.0" />
-                <item android:color="#1E293B" android:offset="0.6" />
-                <item android:color="#0D131F" android:offset="1.0" />
+                <item android:color="#0B0F19" android:offset="0.0" />
+                <item android:color="#161E2E" android:offset="0.5" />
+                <item android:color="#070A10" android:offset="1.0" />
             </gradient>
         </aapt:attr>
     </path>
-    <!-- Subtle circular accent glow -->
+    <!-- Subtle energetic radial rim ring -->
     <path
-        android:pathData="M54,16 A38,38 0 1,0 54,92 A38,38 0 1,0 54,16 Z"
-        android:strokeWidth="1.5"
-        android:strokeColor="#1AFF6B35"
-        android:fillColor="#08FF6B35" />
+        android:pathData="M54,18 A36,36 0 1,0 54,90 A36,36 0 1,0 54,18 Z"
+        android:strokeWidth="1.2"
+        android:strokeColor="#22FF5722"
+        android:fillColor="#00000000" />
 </vector>

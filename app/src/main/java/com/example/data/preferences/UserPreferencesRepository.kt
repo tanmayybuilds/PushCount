@@ -8,6 +8,8 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.data.model.PushupMode
+import com.example.ui.theme.ColorPalette
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -25,6 +27,8 @@ class UserPreferencesRepository(private val context: Context) {
         val DAILY_GOAL = intPreferencesKey("daily_goal")
         val USE_FRONT_CAMERA = booleanPreferencesKey("use_front_camera")
         val THEME_MODE = stringPreferencesKey("theme_mode")
+        val COLOR_PALETTE = stringPreferencesKey("color_palette")
+        val SELECTED_MODE = stringPreferencesKey("selected_mode")
     }
 
     val dailyGoalFlow: Flow<Int> = context.dataStore.data.map { preferences ->
@@ -36,12 +40,22 @@ class UserPreferencesRepository(private val context: Context) {
     }
 
     val themeModeFlow: Flow<ThemeMode> = context.dataStore.data.map { preferences ->
-        val raw = preferences[PreferencesKeys.THEME_MODE] ?: ThemeMode.SYSTEM.name
+        val raw = preferences[PreferencesKeys.THEME_MODE] ?: ThemeMode.DARK.name
         try {
             ThemeMode.valueOf(raw)
         } catch (_: Exception) {
-            ThemeMode.SYSTEM
+            ThemeMode.DARK
         }
+    }
+
+    val colorPaletteFlow: Flow<ColorPalette> = context.dataStore.data.map { preferences ->
+        val raw = preferences[PreferencesKeys.COLOR_PALETTE] ?: ColorPalette.SOLAR_BLAZE.name
+        ColorPalette.fromId(raw)
+    }
+
+    val selectedModeFlow: Flow<PushupMode> = context.dataStore.data.map { preferences ->
+        val raw = preferences[PreferencesKeys.SELECTED_MODE] ?: PushupMode.BEGINNER.name
+        PushupMode.fromId(raw)
     }
 
     suspend fun setDailyGoal(goal: Int) {
@@ -59,6 +73,18 @@ class UserPreferencesRepository(private val context: Context) {
     suspend fun setThemeMode(themeMode: ThemeMode) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.THEME_MODE] = themeMode.name
+        }
+    }
+
+    suspend fun setColorPalette(palette: ColorPalette) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.COLOR_PALETTE] = palette.name
+        }
+    }
+
+    suspend fun setSelectedMode(mode: PushupMode) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.SELECTED_MODE] = mode.name
         }
     }
 

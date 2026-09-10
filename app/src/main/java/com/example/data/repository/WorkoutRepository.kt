@@ -2,6 +2,7 @@ package com.example.data.repository
 
 import com.example.data.local.DailyRepAggregate
 import com.example.data.local.WorkoutSessionDao
+import com.example.data.model.PushupMode
 import com.example.data.model.WorkoutSession
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -17,6 +18,10 @@ class WorkoutRepository(
     val bestSingleDayReps: Flow<Int> = dao.getBestSingleDayReps()
 
     val allSessions: Flow<List<WorkoutSession>> = dao.getAllSessions()
+
+    fun getTotalValidRepsForMode(mode: PushupMode): Flow<Int> {
+        return dao.getTotalValidRepsForMode(mode.id)
+    }
 
     fun getSessionsForDate(date: Long): Flow<List<WorkoutSession>> {
         return dao.getSessionsForDate(date)

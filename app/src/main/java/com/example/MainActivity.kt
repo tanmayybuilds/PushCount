@@ -35,8 +35,14 @@ class MainActivity : ComponentActivity() {
             val themeMode by app.container.userPreferencesRepository.themeModeFlow.collectAsStateWithLifecycle(
                 initialValue = ThemeMode.SYSTEM
             )
+            val colorPalette by app.container.userPreferencesRepository.colorPaletteFlow.collectAsStateWithLifecycle(
+                initialValue = com.example.ui.theme.ColorPalette.SOLAR_BLAZE
+            )
 
-            PushCountTheme(themeMode = themeMode) {
+            PushCountTheme(
+                themeMode = themeMode,
+                colorPalette = colorPalette
+            ) {
                 PushCountApp()
             }
         }

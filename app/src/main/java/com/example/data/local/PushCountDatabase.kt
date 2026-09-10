@@ -6,7 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.data.model.WorkoutSession
 
-@Database(entities = [WorkoutSession::class], version = 1, exportSchema = false)
+@Database(entities = [WorkoutSession::class], version = 2, exportSchema = false)
 abstract class PushCountDatabase : RoomDatabase() {
 
     abstract fun workoutSessionDao(): WorkoutSessionDao
@@ -21,7 +21,9 @@ abstract class PushCountDatabase : RoomDatabase() {
                     context.applicationContext,
                     PushCountDatabase::class.java,
                     "pushcount_database"
-                ).build()
+                )
+                    .fallbackToDestructiveMigration(dropAllTables = false)
+                    .build()
                 INSTANCE = instance
                 instance
             }

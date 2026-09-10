@@ -2,6 +2,7 @@ package com.example.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.data.model.PushupMode
 import com.example.data.model.WorkoutSession
 import com.example.data.preferences.UserPreferencesRepository
 import com.example.data.repository.WorkoutRepository
@@ -42,7 +43,10 @@ data class WorkoutUiState(
     val savedSession: WorkoutSession? = null,
     val isBothHandsDetected: Boolean = false,
     val leftElbowAngle: Float = 0f,
-    val rightElbowAngle: Float = 0f
+    val rightElbowAngle: Float = 0f,
+    val isKneePushup: Boolean = false,
+    val activeMode: PushupMode = PushupMode.BEGINNER,
+    val soundHapticEnabled: Boolean = true
 )
 
 class WorkoutViewModel(
@@ -58,7 +62,8 @@ class WorkoutViewModel(
     init {
         viewModelScope.launch {
             val initialCameraPref = preferencesRepository.useFrontCameraFlow.first()
-            _uiState.update { it.copy(useFrontCamera = initialCameraPref) }
+            val initialMode = preferencesRepository.selectedModeFlow.first()
+            _uiState.update { it.copy(useFrontCamera = initialCameraPref, activeMode = initialMode) }
             startTimer()
         }
     }
@@ -84,6 +89,12 @@ class WorkoutViewModel(
         if (_uiState.value.isPaused || _uiState.value.sessionFinished) return
 
         _uiState.update { current ->
+            val detectedKnee = if (current.activeMode == PushupMode.KNEE) {
+                true
+            } else {
+                result.isKneePushup
+            }
+
             current.copy(
                 validReps = result.validReps,
                 invalidReps = result.invalidReps,
@@ -100,9 +111,31 @@ class WorkoutViewModel(
                 frameHeight = frameHeight,
                 isBothHandsDetected = result.isBothHandsDetected,
                 leftElbowAngle = result.leftElbowAngle,
-                rightElbowAngle = result.rightElbowAngle
+                rightElbowAngle = result.rightElbowAngle,
+                isKneePushup = detectedKnee
             )
         }
+    }
+
+    fun selectMode(mode: PushupMode) {
+        _uiState.update { it.copy(activeMode = mode) }
+        viewModelScope.launch {
+            preferencesRepository.setSelectedMode(mode)
+        }
+    }
+
+    fun cycleTargetMode() {
+        val nextMode = when (_uiState.value.activeMode) {
+            PushupMode.BEGINNER -> PushupMode.HARD
+            PushupMode.HARD -> PushupMode.WALL
+            PushupMode.WALL -> PushupMode.KNEE
+            PushupMode.KNEE -> PushupMode.BEGINNER
+        }
+        selectMode(nextMode)
+    }
+
+    fun toggleSoundHaptic() {
+        _uiState.update { it.copy(soundHapticEnabled = !it.soundHapticEnabled) }
     }
 
     fun togglePause() {
@@ -127,7 +160,8 @@ class WorkoutViewModel(
                 validReps = state.validReps,
                 invalidReps = state.invalidReps,
                 durationSeconds = state.elapsedSeconds,
-                timestamp = System.currentTimeMillis()
+                timestamp = System.currentTimeMillis(),
+                mode = state.activeMode.id
             )
 
             // Only insert into database if user actually attempted reps or spent > 3 seconds

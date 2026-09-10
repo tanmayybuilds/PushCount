@@ -5,7 +5,7 @@ import java.util.ArrayDeque
 /**
  * Applies a simple moving-average window to smooth frame-to-frame noise in landmark angles.
  */
-class MovingAverageFilter(private val windowSize: Int = 5) {
+class MovingAverageFilter(private val windowSize: Int = 2) {
     private val buffer = ArrayDeque<Float>(windowSize)
 
     fun add(value: Float): Float {

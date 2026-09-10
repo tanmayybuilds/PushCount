@@ -51,23 +51,23 @@ fun SkeletonOverlayView(
         }
 
         val boneColor = if (isFormValid) PostureGreen else PostureRed
-        val armColor = Color(0xFFFF8555)
+        val armColor = Color(0xFF00E5FF) // Electric Athletic Cyan
         val handGreen = Color(0xFF00E676)
         val handAlert = Color(0xFFFF3D00)
         val jointColor = Color.White
-        val boneStroke = 7.dp.toPx()
-        val jointRadius = 8.dp.toPx()
+        val boneStroke = 6.dp.toPx()
+        val jointRadius = 7.dp.toPx()
 
         val textPaint = Paint().apply {
             color = android.graphics.Color.WHITE
-            textSize = 36f
+            textSize = 34f
             isFakeBoldText = true
             setShadowLayer(8f, 0f, 0f, android.graphics.Color.BLACK)
         }
 
         val smallTextPaint = Paint().apply {
             color = android.graphics.Color.WHITE
-            textSize = 26f
+            textSize = 24f
             isFakeBoldText = true
             setShadowLayer(6f, 0f, 0f, android.graphics.Color.BLACK)
         }
@@ -87,8 +87,8 @@ fun SkeletonOverlayView(
             val lHip = mapPoint(keypoints.leftHip)
             val rHip = mapPoint(keypoints.rightHip)
 
-            // Shoulder Bar
-            val shoulderColor = if (keypoints.shoulderTiltDegrees <= 22f) PostureGreen else PostureRed
+            // Shoulder Level Bar with Center Balance Bubble
+            val shoulderColor = if (keypoints.shoulderTiltDegrees <= 30f) PostureGreen else PostureRed
             drawLine(
                 color = shoulderColor,
                 start = lShoulder,
@@ -96,6 +96,11 @@ fun SkeletonOverlayView(
                 strokeWidth = boneStroke + 2f,
                 cap = StrokeCap.Round
             )
+
+            // Center balance tick
+            val midX = (lShoulder.x + rShoulder.x) / 2f
+            val midY = (lShoulder.y + rShoulder.y) / 2f
+            drawCircle(color = shoulderColor, radius = 5.dp.toPx(), center = Offset(midX, midY))
 
             // Left Arm: Shoulder -> Elbow -> Wrist
             val lArmColor = if (isFormValid) armColor else PostureRed
@@ -133,13 +138,13 @@ fun SkeletonOverlayView(
 
             // Torso lines if hips are detected
             if (lHip != null && rHip != null) {
-                val torsoColor = Color.White.copy(alpha = 0.4f)
-                drawLine(color = torsoColor, start = lShoulder, end = lHip, strokeWidth = 4.dp.toPx(), cap = StrokeCap.Round)
-                drawLine(color = torsoColor, start = rShoulder, end = rHip, strokeWidth = 4.dp.toPx(), cap = StrokeCap.Round)
-                drawLine(color = torsoColor, start = lHip, end = rHip, strokeWidth = 4.dp.toPx(), cap = StrokeCap.Round)
+                val torsoColor = Color.White.copy(alpha = 0.35f)
+                drawLine(color = torsoColor, start = lShoulder, end = lHip, strokeWidth = 3.dp.toPx(), cap = StrokeCap.Round)
+                drawLine(color = torsoColor, start = rShoulder, end = rHip, strokeWidth = 3.dp.toPx(), cap = StrokeCap.Round)
+                drawLine(color = torsoColor, start = lHip, end = rHip, strokeWidth = 3.dp.toPx(), cap = StrokeCap.Round)
 
-                drawCircle(color = jointColor, radius = 6.dp.toPx(), center = lHip)
-                drawCircle(color = jointColor, radius = 6.dp.toPx(), center = rHip)
+                drawCircle(color = jointColor, radius = 5.dp.toPx(), center = lHip)
+                drawCircle(color = jointColor, radius = 5.dp.toPx(), center = rHip)
             }
 
             // Draw Elbow and Shoulder Joints
@@ -149,36 +154,21 @@ fun SkeletonOverlayView(
                 drawCircle(color = if (isFormValid) PostureGreen else PostureRed, radius = jointRadius * 0.6f, center = joint)
             }
 
-            // Draw Hand Indicators at Wrists (Distinguishing Detected vs Not Detected)
-            val leftHandOk = (keypoints.leftWrist?.confidence ?: 0f) >= 0.35f
-            val rightHandOk = (keypoints.rightWrist?.confidence ?: 0f) >= 0.35f
+            // Draw Hand Indicators at Wrists
+            val leftHandOk = keypoints.isBothHandsDetected || (keypoints.leftWrist?.confidence ?: 0f) >= 0.2f
+            val rightHandOk = keypoints.isBothHandsDetected || (keypoints.rightWrist?.confidence ?: 0f) >= 0.2f
 
             // Left Hand Target
             val lHandColor = if (leftHandOk) handGreen else handAlert
-            drawCircle(color = lHandColor.copy(alpha = 0.25f), radius = 24.dp.toPx(), center = lWrist)
-            drawCircle(color = lHandColor, radius = 14.dp.toPx(), center = lWrist)
-            drawCircle(color = Color.White, radius = 7.dp.toPx(), center = lWrist)
+            drawCircle(color = lHandColor.copy(alpha = 0.25f), radius = 22.dp.toPx(), center = lWrist)
+            drawCircle(color = lHandColor, radius = 12.dp.toPx(), center = lWrist)
+            drawCircle(color = Color.White, radius = 6.dp.toPx(), center = lWrist)
 
             // Right Hand Target
             val rHandColor = if (rightHandOk) handGreen else handAlert
-            drawCircle(color = rHandColor.copy(alpha = 0.25f), radius = 24.dp.toPx(), center = rWrist)
-            drawCircle(color = rHandColor, radius = 14.dp.toPx(), center = rWrist)
-            drawCircle(color = Color.White, radius = 7.dp.toPx(), center = rWrist)
-
-            // Hand Status Label over wrists
-            drawContext.canvas.nativeCanvas.drawText(
-                if (leftHandOk) "HAND" else "NO HAND",
-                lWrist.x - 36f,
-                lWrist.y + 40f,
-                smallTextPaint
-            )
-
-            drawContext.canvas.nativeCanvas.drawText(
-                if (rightHandOk) "HAND" else "NO HAND",
-                rWrist.x - 36f,
-                rWrist.y + 40f,
-                smallTextPaint
-            )
+            drawCircle(color = rHandColor.copy(alpha = 0.25f), radius = 22.dp.toPx(), center = rWrist)
+            drawCircle(color = rHandColor, radius = 12.dp.toPx(), center = rWrist)
+            drawCircle(color = Color.White, radius = 6.dp.toPx(), center = rWrist)
 
             // Live Angle Readouts on both elbows
             val lAngle = if (leftElbowAngle > 0f) leftElbowAngle else elbowAngle
@@ -186,7 +176,7 @@ fun SkeletonOverlayView(
 
             drawContext.canvas.nativeCanvas.drawText(
                 "L: ${lAngle.toInt()}°",
-                lElbow.x - 50f,
+                lElbow.x - 52f,
                 lElbow.y - 18f,
                 textPaint
             )
@@ -232,7 +222,7 @@ fun SkeletonOverlayView(
         drawCircle(color = handGreen, radius = 12.dp.toPx(), center = wrist)
         drawCircle(color = Color.White, radius = 6.dp.toPx(), center = wrist)
 
-        // 2. Draw Plank Bones: Shoulder -> Hip -> Knee -> Ankle
+        // 2. Draw Plank Bones: Shoulder -> Hip -> Knee
         drawLine(
             color = boneColor,
             start = shoulder,
@@ -247,16 +237,37 @@ fun SkeletonOverlayView(
             strokeWidth = boneStroke,
             cap = StrokeCap.Round
         )
-        drawLine(
-            color = boneColor,
-            start = knee,
-            end = ankle,
-            strokeWidth = boneStroke,
-            cap = StrokeCap.Round
-        )
+
+        // If Knee Pushup: highlight knee pivot and draw lower leg bent
+        if (keypoints.isKneePushup) {
+            // Knee pivot ring
+            drawCircle(color = Color(0xFFFFB300).copy(alpha = 0.35f), radius = 18.dp.toPx(), center = knee)
+            drawCircle(color = Color(0xFFFFB300), radius = 10.dp.toPx(), center = knee)
+            drawCircle(color = Color.White, radius = 5.dp.toPx(), center = knee)
+
+            // Lower leg bent upward (dimmer line)
+            drawLine(
+                color = Color.White.copy(alpha = 0.5f),
+                start = knee,
+                end = ankle,
+                strokeWidth = 3.dp.toPx(),
+                cap = StrokeCap.Round
+            )
+            drawContext.canvas.nativeCanvas.drawText("KNEE PIVOT", knee.x + 14f, knee.y + 24f, smallTextPaint)
+        } else {
+            // Standard Pushup: Knee -> Ankle
+            drawLine(
+                color = boneColor,
+                start = knee,
+                end = ankle,
+                strokeWidth = boneStroke,
+                cap = StrokeCap.Round
+            )
+            drawCircle(color = jointColor, radius = jointRadius, center = ankle)
+        }
 
         // 3. Draw Joint Indicators
-        val joints = listOf(shoulder, elbow, hip, knee, ankle)
+        val joints = listOf(shoulder, elbow, hip)
         for (joint in joints) {
             drawCircle(
                 color = jointColor,

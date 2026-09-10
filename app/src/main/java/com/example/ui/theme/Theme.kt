@@ -47,6 +47,7 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun PushCountTheme(
     themeMode: ThemeMode = ThemeMode.SYSTEM,
+    colorPalette: ColorPalette = ColorPalette.SOLAR_BLAZE,
     content: @Composable () -> Unit
 ) {
     val darkTheme = when (themeMode) {
@@ -55,7 +56,21 @@ fun PushCountTheme(
         ThemeMode.LIGHT -> false
     }
 
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val primaryColor = if (darkTheme) colorPalette.primaryDark else colorPalette.primaryLight
+
+    val colorScheme = if (darkTheme) {
+        DarkColorScheme.copy(
+            primary = primaryColor,
+            onPrimaryContainer = primaryColor,
+            tertiary = colorPalette.accentGlow
+        )
+    } else {
+        LightColorScheme.copy(
+            primary = primaryColor,
+            onPrimaryContainer = primaryColor,
+            tertiary = colorPalette.accentGlow
+        )
+    }
 
     MaterialTheme(
         colorScheme = colorScheme,

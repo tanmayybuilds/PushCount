@@ -14,11 +14,15 @@ data class WorkoutSession(
     val validReps: Int,
     val invalidReps: Int,
     val durationSeconds: Int,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val mode: String = PushupMode.BEGINNER.id
 ) {
     val totalReps: Int
         get() = validReps + invalidReps
 
     val accuracyPercentage: Int
         get() = if (totalReps > 0) ((validReps.toDouble() / totalReps) * 100).toInt() else 100
+
+    val pushupMode: PushupMode
+        get() = PushupMode.fromId(mode)
 }
